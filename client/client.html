@@ -1,13 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <title>Our simple HTTP server</title>
   <link rel="stylesheet" type="text/css" href="/style.css">
-  
-  <script>
 
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sendButton = document.getElementById('send');
+      const pageSelect = document.getElementById('page');
+      const typeSelect = document.getElementById('type');
+      const contentSection = document.getElementById('content');
+
+      sendButton.addEventListener('click', () => {
+        const url = pageSelect.value;
+        const acceptType = typeSelect.value;
+
+        contentSection.innerHTML = '<h4>Loading...</h4>';
+
+        fetch(url, {
+          headers: {
+            'Accept': acceptType
+          }
+        })
+          .then(response => {
+            const contentType = response.headers.get('content-type');
+
+            response.text().then(text => {
+              console.log(text);
+              
+              let parsedData;
+              if (contentType.includes('application/json')) {
+                parsedData = JSON.parse(text);
+              } else if (contentType.includes('text/xml')) {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, "text/xml");
+                parsedData = {};
+
+                const messageNode = xmlDoc.getElementsByTagName('message')[0];
+                const idNode = xmlDoc.getElementsByTagName('id')[0];
+
+                if (messageNode) parsedData.message = messageNode.textContent;
+                if (idNode) parsedData.id = idNode.textContent;
+              }
+
+              displayResponse(response.status, parsedData, text);
+            });
+          })
+          .catch(error => {
+            contentSection.innerHTML = `<div class="response error">
+            <h4>Error: ${error.message}</h4>
+          </div>`;
+          });
+      });
+
+      function displayResponse(status, data, rawText) {
+        const isSuccess = status >= 200 && status < 300;
+
+        contentSection.innerHTML = `
+          <div class="response ${isSuccess ? 'success' : 'error'}">
+            <h4>Status: ${status} ${getStatusText(status)}</h4>
+            <p><strong>Message:</strong> ${data.message || 'No message'}</p>
+
+          </div>
+        `;
+      }
+
+      function getStatusText(status) {
+        const statusTexts = {
+          200: 'OK',
+          400: 'Bad Request',
+          401: 'Unauthorized',
+          403: 'Forbidden',
+          404: 'Not Found',
+          500: 'Internal Server Error',
+          501: 'Not Implemented'
+        };
+        return statusTexts[status] || 'Unknown Status';
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    });
   </script>
 </head>
+
 <body>
   <section id="top">
     <h3>Status Code Tests</h3>
@@ -29,4 +109,5 @@
   <section id="content">
   </section>
 </body>
+
 </html>
