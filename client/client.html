@@ -28,7 +28,7 @@
 
             response.text().then(text => {
               console.log(text);
-              
+
               let parsedData;
               if (contentType.includes('application/json')) {
                 parsedData = JSON.parse(text);
@@ -109,5 +109,4 @@
   <section id="content">
   </section>
 </body>
-
 </html>
